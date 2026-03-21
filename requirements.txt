@@ -1,0 +1,5 @@
+aiogram==3.13.1
+pyrogram==2.0.106
+TgCrypto==1.2.5          # fast C-extension crypto for Pyrogram — strongly recommended
+huggingface_hub>=0.24.0  # AsyncInferenceClient + HfHubHTTPError
+python-dotenv==1.0.1
