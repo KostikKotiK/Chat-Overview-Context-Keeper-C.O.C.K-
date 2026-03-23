@@ -46,6 +46,9 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
+logging.getLogger("aiogram.event").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Config  (all values from .env)
 # ──────────────────────────────────────────────────────────────────────────────
@@ -224,22 +227,24 @@ router = Router()
 
 @router.my_chat_member()
 async def on_bot_added_or_removed(event: ChatMemberUpdated) -> None:
-    """Triggered whenever the bot is added to or removed from a group."""
+    """Triggered whenever the bot is added, removed, or promoted in a group."""
     chat_name = event.chat.title or "Unknown Group"
     chat_id = event.chat.id
     new_status = event.new_chat_member.status
 
-    # The bot was added to a group
-    if new_status in ["member", "administrator"]:
-        log.info(f"✅ BOT ADDED TO GROUP: '{chat_name}' (ID: {chat_id})")
-        # Save to a permanent text file
-        with open("groups.txt", "a", encoding="utf-8") as f:
-            f.write(f"ADDED: '{chat_name}' (ID: {chat_id})\n")
+    # Open the file once to write whichever event happened
+    with open("groups.txt", "a", encoding="utf-8") as f:
+        
+        if new_status == "administrator":
+            log.info(f"👑 BOT IS ADMIN IN: '{chat_name}' (ID: {chat_id})")
+            f.write(f"ADMIN: '{chat_name}' (ID: {chat_id})\n")
             
-    # The bot was removed or kicked from a group
-    elif new_status in ["left", "kicked"]:
-        log.info(f"❌ BOT REMOVED FROM GROUP: '{chat_name}' (ID: {chat_id})")
-        with open("groups.txt", "a", encoding="utf-8") as f:
+        elif new_status == "member":
+            log.info(f"👤 BOT IS REGULAR USER IN: '{chat_name}' (ID: {chat_id})")
+            f.write(f"USER: '{chat_name}' (ID: {chat_id})\n")
+            
+        elif new_status in ["left", "kicked"]:
+            log.info(f"❌ BOT REMOVED FROM: '{chat_name}' (ID: {chat_id})")
             f.write(f"REMOVED: '{chat_name}' (ID: {chat_id})\n")
 
 
@@ -352,6 +357,7 @@ async def main() -> None:
 
     log.info("Starting aiogram polling…")
     try:
+        await bot.delete_webhook(drop_pending_updates=True)
         await dp.start_polling(bot, allowed_updates=["message", "my_chat_member"])
     finally:
         log.info("Shutdown requested — stopping clients…")
