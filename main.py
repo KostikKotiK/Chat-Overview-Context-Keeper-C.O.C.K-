@@ -222,6 +222,27 @@ async def collect_messages(
 
 router = Router()
 
+@router.my_chat_member()
+async def on_bot_added_or_removed(event: ChatMemberUpdated) -> None:
+    """Triggered whenever the bot is added to or removed from a group."""
+    chat_name = event.chat.title or "Unknown Group"
+    chat_id = event.chat.id
+    new_status = event.new_chat_member.status
+
+    # The bot was added to a group
+    if new_status in ["member", "administrator"]:
+        log.info(f"✅ BOT ADDED TO GROUP: '{chat_name}' (ID: {chat_id})")
+        # Save to a permanent text file
+        with open("groups.txt", "a", encoding="utf-8") as f:
+            f.write(f"ADDED: '{chat_name}' (ID: {chat_id})\n")
+            
+    # The bot was removed or kicked from a group
+    elif new_status in ["left", "kicked"]:
+        log.info(f"❌ BOT REMOVED FROM GROUP: '{chat_name}' (ID: {chat_id})")
+        with open("groups.txt", "a", encoding="utf-8") as f:
+            f.write(f"REMOVED: '{chat_name}' (ID: {chat_id})\n")
+
+
 @router.message(Command("summarize"))
 async def cmd_summarize(message: Message, pyro_client: Client) -> None:
     if not message.reply_to_message:
